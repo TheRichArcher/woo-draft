@@ -6,7 +6,7 @@ conf = ConnectionConfig(
     MAIL_PASSWORD=settings.EMAIL_PASSWORD,
     MAIL_FROM=settings.EMAIL_USERNAME,
     MAIL_PORT=587,
-    MAIL_SERVER="smtp.gmail.com",  # Change if using a different provider
+    MAIL_SERVER="smtp.office365.com",  # ← Correct SMTP for Rich@worcesterflag.com
     MAIL_STARTTLS=True,
     MAIL_SSL_TLS=False,
     USE_CREDENTIALS=True,
@@ -28,4 +28,8 @@ async def send_invite_email(name: str, email: str, invite_token: str):
         subtype="plain"
     )
     fm = FastMail(conf)
-    await fm.send_message(message)
+    try:
+        await fm.send_message(message)
+    except Exception as e:
+        print("[EMAIL SEND ERROR]", e)
+        raise
