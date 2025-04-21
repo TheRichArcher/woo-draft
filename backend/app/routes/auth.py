@@ -80,7 +80,7 @@ async def register_coach(data: UserRegisterRequest, db: AsyncSession = Depends(g
     user.invite_token = None
     
     # Temporary override for admin registration
-    if data.email == "admin@woo-combine.com":
+    if data.email.lower() == "rich@worcesterflag.com":
         logging.warning(f"Temporarily setting admin role for {data.email} during registration.")
         user.is_admin = True
     # else: # Optional: Ensure non-admins are explicitly set to False if needed
