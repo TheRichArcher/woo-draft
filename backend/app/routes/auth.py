@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy import func
 from app.core.db import SessionLocal, get_db
 from app.models.user import User
 from app.schemas.user import UserInviteRequest, UserRegisterRequest, UserLoginRequest, UserResponse, CoachStatusResponse
@@ -64,30 +65,33 @@ async def invite_coach(data: UserInviteRequest, background_tasks: BackgroundTask
 
 @router.post("/register", response_model=UserResponse)
 async def register_coach(data: UserRegisterRequest, db: AsyncSession = Depends(get_db)):
-    stmt = select(User).where(User.invite_token == data.token)
-    result = await db.execute(stmt)
-    user = result.scalar_one_or_none()
+    # TEMPORARY BYPASS: Check if user already exists before creating
+    stmt_exist = select(User).where(func.lower(User.email) == data.email.lower())
+    result_exist = await db.execute(stmt_exist)
+    existing_user = result_exist.scalar_one_or_none()
 
-    if not user:
-        raise HTTPException(status_code=404, detail="Invalid invite token.")
-    if user.is_verified:
+    if existing_user:
+        # If user exists and is verified, maybe just return them? Or raise error?
+        # Let's raise an error as per the user's prompt suggestion to prevent duplicates clearly.
         raise HTTPException(status_code=400, detail="User already registered.")
-    
-    user.name = data.name
-    user.email = data.email
-    user.password_hash = bcrypt.hash(data.password)
-    user.is_verified = True
-    user.invite_token = None
-    
-    # Temporary override for admin registration
-    if data.email.lower() == "rich@worcesterflag.com":
-        logging.warning(f"Temporarily setting admin role for {data.email} during registration.")
-        user.is_admin = True
-    # else: # Optional: Ensure non-admins are explicitly set to False if needed
-    #     user.is_admin = False
-        
+
+    # If user doesn't exist, create them directly without invite token
+    logging.warning(f"TEMPORARY BYPASS: Creating user {data.email} without invite token check.")
+    user = User(
+        name=data.name,
+        email=data.email, # Store email as provided, comparison is case-insensitive
+        password_hash=bcrypt.hash(data.password),
+        is_verified=True, # Auto-verify
+        is_admin=True, # Auto-set as admin
+        invite_token=None # No token needed/used
+    )
+    db.add(user)
     await db.commit()
     await db.refresh(user)
+
+    # The previous conditional admin logic based on email is removed,
+    # as we are directly setting is_admin=True for this temporary bypass.
+
     return user
 
 @router.post("/login")
@@ -95,7 +99,7 @@ async def login(data: UserLoginRequest, db: AsyncSession = Depends(get_db)):
     logging.info(f"Login attempt for email: {data.email}")
     try:
         logging.info("Querying user...")
-        stmt = select(User).where(User.email == data.email)
+        stmt = select(User).where(func.lower(User.email) == data.email.lower())
         result = await db.execute(stmt)
         user = result.scalar_one_or_none()
         
