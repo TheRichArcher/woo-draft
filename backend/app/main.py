@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # Import routers
-from app.routes import auth, players, draft #, results, admin # Uncomment when results & admin routes are implemented
+from backend.app.routes import auth, players, draft #, results, admin # Uncomment when results & admin routes are implemented
 
 app = FastAPI(title="Woo Draft API")
 
