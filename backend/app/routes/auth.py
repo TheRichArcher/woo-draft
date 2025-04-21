@@ -9,6 +9,7 @@ from app.models.user import User
 from app.schemas.user import UserInviteRequest, UserRegisterRequest, UserLoginRequest, UserResponse, CoachStatusResponse
 from app.core.mail import send_invite_email
 from app.core.config import settings
+from app.core.security import get_current_user
 from passlib.hash import bcrypt
 from jose import jwt
 import uuid
@@ -147,3 +148,16 @@ async def get_coaches(db: AsyncSession = Depends(get_db), current_user: User = D
             created_at=coach.created_at
         ))
     return result_list
+
+# New route to verify token
+@router.post("/verify")
+async def verify_token(current_user: User = Depends(get_current_user)):
+    # If get_current_user dependency runs without error, the token is valid.
+    # The dependency also ensures the user exists and is verified.
+    # Return specific fields as requested
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "is_admin": current_user.is_admin,
+        "is_verified": current_user.is_verified
+    }
