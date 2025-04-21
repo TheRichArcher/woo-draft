@@ -7,3 +7,5 @@ passlib
 fastapi-mail
 python-jose[cryptography]
 psycopg2
+pydantic-settings>=2.0
+asyncpg
