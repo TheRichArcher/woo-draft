@@ -1,3 +1,4 @@
+import logging
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
 from app.core.config import settings
 
@@ -31,5 +32,5 @@ async def send_invite_email(name: str, email: str, invite_token: str):
     try:
         await fm.send_message(message)
     except Exception as e:
-        print("[EMAIL SEND ERROR]", e)
+        logging.exception("Failed to send invite email to %s", email)
         raise
